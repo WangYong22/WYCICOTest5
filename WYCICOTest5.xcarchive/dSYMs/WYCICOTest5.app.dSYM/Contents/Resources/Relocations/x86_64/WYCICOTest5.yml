@@ -1,0 +1,33 @@
+---
+triple:          'x86_64-apple-darwin'
+binary-path:     '/Users/test/Library/Developer/Xcode/DerivedData/WYCICOTest5-foajkeiqoehtkgdyuylulmbrodso/Build/Intermediates.noindex/ArchiveIntermediates/WYCICOTest5/InstallationBuildProductsLocation/Applications/WYCICOTest5.app/Contents/MacOS/WYCICOTest5'
+relocations:
+  - { offsetInCU: 0x43, offset: 0xC365C, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewVMa', symObjAddr: 0x0, symBinAddr: 0x100002F10, symSize: 0x10 }
+  - { offsetInCU: 0x57, offset: 0xC3670, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewV7SwiftUI0C0AA4BodyAdEP_AGWT', symObjAddr: 0x10, symBinAddr: 0x100002F20, symSize: 0x20 }
+  - { offsetInCU: 0xB4, offset: 0xC36CD, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewV4bodyQrvg7SwiftUI05TupleC0VyAE0C0PAEE15foregroundStyleyQrqd__AE05ShapeI0Rd__lFQOyAiEE10imageScaleyQrAE5ImageV0L0OFQOyAN_Qo__AE04TintjI0VQo__AE4TextVtGyXEfU_', symObjAddr: 0x30, symBinAddr: 0x100002F40, symSize: 0x360 }
+  - { offsetInCU: 0x199, offset: 0xC37B2, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewV7SwiftUI0C0AadEP4body4BodyQzvgTW', symObjAddr: 0x3C0, symBinAddr: 0x1000032D0, symSize: 0x100 }
+  - { offsetInCU: 0x28E, offset: 0xC38A7, size: 0x8, addend: 0x0, symName: ___swift_instantiateConcreteTypeFromMangledName, symObjAddr: 0x4C0, symBinAddr: 0x1000033D0, symSize: 0x40 }
+  - { offsetInCU: 0x2A2, offset: 0xC38BB, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI17EnvironmentValuesV10imageScaleAA5ImageV0F0OvpACTKq', symObjAddr: 0x500, symBinAddr: 0x100003410, symSize: 0x20 }
+  - { offsetInCU: 0x2BA, offset: 0xC38D3, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI17EnvironmentValuesV10imageScaleAA5ImageV0F0OvpACTkq', symObjAddr: 0x520, symBinAddr: 0x100003430, symSize: 0x60 }
+  - { offsetInCU: 0x2D2, offset: 0xC38EB, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI4TextV7StorageOWOy', symObjAddr: 0x5E0, symBinAddr: 0x1000034F0, symSize: 0x20 }
+  - { offsetInCU: 0x2E6, offset: 0xC38FF, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI4TextV7StorageOWOe', symObjAddr: 0x630, symBinAddr: 0x100003540, symSize: 0x20 }
+  - { offsetInCU: 0x2FA, offset: 0xC3913, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI15ModifiedContentVyAA6VStackVyAA9TupleViewVyACyACyAA5ImageVAA30_EnvironmentKeyWritingModifierVyAI5ScaleOGGAA016_ForegroundStyleL0VyAA09TintShapeO0VGG_AA4TextVtGGAA14_PaddingLayoutVGACyxq_GAA0G0A2AA2_RzAA0gL0R_rlWl', symObjAddr: 0x660, symBinAddr: 0x100003570, symSize: 0x60 }
+  - { offsetInCU: 0x30E, offset: 0xC3927, size: 0x8, addend: 0x0, symName: ___swift_instantiateConcreteTypeFromMangledNameAbstract, symObjAddr: 0x6C0, symBinAddr: 0x1000035D0, symSize: 0x40 }
+  - { offsetInCU: 0x322, offset: 0xC393B, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI6VStackVyAA9TupleViewVyAA15ModifiedContentVyAGyAA5ImageVAA30_EnvironmentKeyWritingModifierVyAI5ScaleOGGAA016_ForegroundStyleL0VyAA09TintShapeO0VGG_AA4TextVtGGACyxGAA0E0AAWl', symObjAddr: 0x700, symBinAddr: 0x100003610, symSize: 0x40 }
+  - { offsetInCU: 0x3DE, offset: 0xC39F7, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewV7SwiftUI0C0AadEP05_makeC04view6inputsAD01_C7OutputsVAD11_GraphValueVyxG_AD01_C6InputsVtFZTW', symObjAddr: 0x390, symBinAddr: 0x1000032A0, symSize: 0x10 }
+  - { offsetInCU: 0x3FA, offset: 0xC3A13, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewV7SwiftUI0C0AadEP05_makeC4List4view6inputsAD01_cG7OutputsVAD11_GraphValueVyxG_AD01_cG6InputsVtFZTW', symObjAddr: 0x3A0, symBinAddr: 0x1000032B0, symSize: 0x10 }
+  - { offsetInCU: 0x416, offset: 0xC3A2F, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewV7SwiftUI0C0AadEP14_viewListCount6inputsSiSgAD01_cgH6InputsV_tFZTW', symObjAddr: 0x3B0, symBinAddr: 0x1000032C0, symSize: 0x10 }
+  - { offsetInCU: 0x27, offset: 0xC3BAE, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppV4bodyQrvgAA11ContentViewVyXEfU_', symObjAddr: 0x0, symBinAddr: 0x1000036A0, symSize: 0x10 }
+  - { offsetInCU: 0x46, offset: 0xC3BCD, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppV4bodyQrvgAA11ContentViewVyXEfU_', symObjAddr: 0x0, symBinAddr: 0x1000036A0, symSize: 0x10 }
+  - { offsetInCU: 0x71, offset: 0xC3BF8, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppV7SwiftUI0B0AadEP4body4BodyQzvgTW', symObjAddr: 0x10, symBinAddr: 0x1000036B0, symSize: 0x90 }
+  - { offsetInCU: 0xA3, offset: 0xC3C2A, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppV7SwiftUI0B0AadEPxycfCTW', symObjAddr: 0xA0, symBinAddr: 0x100003740, symSize: 0x10 }
+  - { offsetInCU: 0xCE, offset: 0xC3C55, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0xB0, symBinAddr: 0x100003750, symSize: 0x30 }
+  - { offsetInCU: 0x102, offset: 0xC3C89, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppVAC7SwiftUI0B0AAWl', symObjAddr: 0xE0, symBinAddr: 0x100003780, symSize: 0x30 }
+  - { offsetInCU: 0x116, offset: 0xC3C9D, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppVMa', symObjAddr: 0x110, symBinAddr: 0x1000037B0, symSize: 0x10 }
+  - { offsetInCU: 0x12A, offset: 0xC3CB1, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest50A3AppV7SwiftUI0B0AA4BodyAdEP_AD5ScenePWT', symObjAddr: 0x120, symBinAddr: 0x1000037C0, symSize: 0x20 }
+  - { offsetInCU: 0x13E, offset: 0xC3CC5, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest511ContentViewVAC7SwiftUI0C0AAWl', symObjAddr: 0x180, symBinAddr: 0x1000037E0, symSize: 0x30 }
+  - { offsetInCU: 0x152, offset: 0xC3CD9, size: 0x8, addend: 0x0, symName: '_$s7SwiftUI11WindowGroupVy11WYCICOTest511ContentViewVGACyxGAA5SceneAAWl', symObjAddr: 0x1B0, symBinAddr: 0x100003810, symSize: 0x40 }
+  - { offsetInCU: 0x2B, offset: 0xC3DE0, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest519ResourceBundleClass028_DC9441F0D50072AB4ECD9B2D4D5J3D00LLCfD', symObjAddr: 0x0, symBinAddr: 0x100003860, symSize: 0x20 }
+  - { offsetInCU: 0x55, offset: 0xC3E0A, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest519ResourceBundleClass028_DC9441F0D50072AB4ECD9B2D4D5J3D00LLCfD', symObjAddr: 0x0, symBinAddr: 0x100003860, symSize: 0x20 }
+  - { offsetInCU: 0x84, offset: 0xC3E39, size: 0x8, addend: 0x0, symName: '_$s11WYCICOTest519ResourceBundleClass028_DC9441F0D50072AB4ECD9B2D4D5J3D00LLCMa', symObjAddr: 0x20, symBinAddr: 0x100003880, symSize: 0x14 }
+...
