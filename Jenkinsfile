@@ -196,23 +196,23 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
       agent { label "${env.BUILD_NODE}" }    // 等 inbound agent 上线
       steps {
         sh '''#!/bin/bash
-    set -euo pipefail
-    xcodebuild -version || true
-    # TODO: 放实际构建命令
+           set -euo pipefail
+    	   xcodebuild -version || true
+           # TODO: 放实际构建命令
           
-    #脚本开始————————————————
-			
-			
+           #脚本开始————————————————
+				
 			hostname
-			sw_vers
-			
+			sw_vers		
 			echo "=== 尝试 ping 宿主机网关 "
             ping -c 4 17.87.2.137 || echo "⚠️ Ping 17.87.2.137"
+            '''
             
             withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
                                    keyFileVariable: 'SSH_KEY',
                                    usernameVariable: 'SSH_USER')]) 
-             
+          
+           sh '''#!/bin/bash   
               scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
               "$SSH_USER"@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.provisionprofile \
               /tmp/WYCICOTest5V2.provisionprofile
