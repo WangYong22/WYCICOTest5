@@ -206,11 +206,12 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			hostname
 			sw_vers
 			
-			echo "=== 尝试 ping 宿主机网关 192.168.64.1 ==="
-            ping -c 4 192.168.64.1 || echo "⚠️ Ping 不通 192.168.64.1"
+			echo "=== 尝试 ping 宿主机网关 "
             ping -c 4 17.87.2.137 || echo "⚠️ Ping 17.87.2.137"
+			scp -i abcd1234 -o StrictHostKeyChecking=no \
+            mdsadmin@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.mobileprovision /tmp/WYCICOTest5V2.provisionprofile
 			
-			PROFILE_FILE="/var/jenkins_home/profiles/WYCICOTest5V2.provisionprofile"
+			PROFILE_FILE="/tmp/profiles/WYCICOTest5V2.provisionprofile"
             PROFILE_UUID=$(grep -A1 UUID -a "$PROFILE_FILE" | grep -io "[-A-F0-9]\\{36\\}" | head -1)
 			mkdir -p "${HOME}/Library/MobileDevice/Provisioning Profiles"
 			cp "$PROFILE_FILE" "${HOME}/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
