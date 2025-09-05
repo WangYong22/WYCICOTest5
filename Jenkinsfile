@@ -241,7 +241,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			project_workspace="${Project_Name}.xcworkspace"
 			
 			
-			export_path="${HOME}/project/build/${Project_Name}""
+			export_path="${HOME}/project/build/${Project_Name}"
 			export_name="${export_path}/${project_scheme}_${APP_VERSION}.ipa"
 			
 			# archive 目标路径
@@ -308,10 +308,10 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 				#查看可用证书
 				security find-identity -vp codesigning
 			
-				# 清理
+			  # 清理
 			  #  xcodebuild clean -scheme $project_scheme -configuration $Configuration 
-				# 构建 archive 包
-				xcodebuild archive  \
+			  # 构建 archive 包
+			  xcodebuild archive  \
 				-scheme $project_scheme \
 				-configuration $Configuration \
 				clean archive \
@@ -324,11 +324,11 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 				BUILD_DIR="$build_dir"  \
 				PROVISIONING_PROFILE_SPECIFIER="${CPROVISIONING_PROFILE_NAME}" \
 				PROVISIONING_PROFILE="${PROFILE_UUID}" \
-			   PRODUCT_BUNDLE_IDENTIFIER="${BundleID}" \
+			    PRODUCT_BUNDLE_IDENTIFIER="${BundleID}" \
 				-quiet
 			  
-				#输出ipa包
-				xcodebuild -exportArchive -archivePath $archive_path -exportOptionsPlist $exportOptionsPlist -exportPath $export_path
+			  #输出ipa包
+			  xcodebuild -exportArchive -archivePath $archive_path -exportOptionsPlist $exportOptionsPlist -exportPath $export_path
 			}
 			
 			cd ${WORKSPACE}
@@ -337,41 +337,9 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			func_export_plist
 			func_build
 			
-			post {
-			  always {
-				// 目标根目录
-				def TARGET_ROOT = "/var/jenkins_home/buildDir"
-				// 例如 "22#4"
-				def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
-				def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
-			
-				sh """#!/bin/bash
-			set -euo pipefail
-			mkdir -p "${TARGET_DIR}"
-			
-			# 拷贝 ipa（你的脚本里导出到 \$EXPORT_PATH）
-			if ls "\$EXPORT_PATH"/*.ipa >/dev/null 2>&1; then
-			  cp "\$EXPORT_PATH"/*.ipa "${TARGET_DIR}/"
-			fi
-			
-			# 拷贝整个 .xcarchive 目录（你的脚本里是 \$ARCHIVE_PATH）
-			if [ -d "\$ARCHIVE_PATH" ]; then
-			  cp -R "\$ARCHIVE_PATH" "${TARGET_DIR}/"
-			fi
-			
-			# 也可以把生成的变量文件拷贝过去，便于排查
-			[ -f BuildVariable ] && cp BuildVariable "${TARGET_DIR}/" || true
-			"""
-			
-				// 让 Jenkins 页面也能直接下载到（可选）
-				archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*", fingerprint: true, onlyIfSuccessful: false
-			  }
-			}
-			#脚本结束————————————————
 
-          
-          
-          
+			#脚本结束————————————————
+           
         '''
       }
     }
@@ -379,9 +347,37 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 
   post {
     always {
+    def TARGET_ROOT = "/var/jenkins_home/buildDir"
+    def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
+    def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
+
+    sh """#!/bin/bash
+		set -euo pipefail
+		mkdir -p "${TARGET_DIR}"
+		# 读取我们在 sh 里写的变量文件
+		source BuildVariable
+		
+		# 拷贝 ipa
+		if ls "${export_path}"/*.ipa >/dev/null 2>&1; then
+		  cp "${export_path}"/*.ipa "${TARGET_DIR}/"
+		fi
+		# 拷贝 .xcarchive
+		if [ -d "${archive_path}" ]; then
+		  cp -R "${archive_path}" "${TARGET_DIR}/"
+		fi
+		cp BuildVariable "${TARGET_DIR}/" || true
+	"""
+
+    archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*",
+                     fingerprint: true,
+                     onlyIfSuccessful: false
+    }
+
+
       withKubeConfig([credentialsId: env.KCFG_ID]) {
         sh "kubectl -n ci delete pod macos-build-${BUILD_NODE} --ignore-not-found"
         sh "kubectl -n ci delete secret jenkins-macos-${BUILD_NODE} --ignore-not-found"
+
       }
     }
   }
