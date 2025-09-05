@@ -337,7 +337,30 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			func_export_plist
 			func_build
 			
+	def TARGET_ROOT = "/var/jenkins_home/buildDir"
+    	def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
+    	def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
 
+    	
+		
+	mkdir -p "${TARGET_DIR}"
+	# 读取我们在 sh 里写的变量文件
+	source BuildVariable
+
+	# 拷贝 ipa
+	if ls "${export_path}"/*.ipa >/dev/null 2>&1; then
+	  cp "${export_path}"/*.ipa "${TARGET_DIR}/"
+	fi
+	# 拷贝 .xcarchive
+	if [ -d "${archive_path}" ]; then
+	  cp -R "${archive_path}" "${TARGET_DIR}/"
+	fi
+	  cp BuildVariable "${TARGET_DIR}/" || true
+  """
+
+   archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*",
+		fingerprint: true,
+		onlyIfSuccessful: false
 			#脚本结束————————————————
            
         '''
@@ -346,39 +369,11 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
   }
 
   post {
-    always {
-    def TARGET_ROOT = "/var/jenkins_home/buildDir"
-    def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
-    def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
-
-    sh """#!/bin/bash
-		set -euo pipefail
-		mkdir -p "${TARGET_DIR}"
-		# 读取我们在 sh 里写的变量文件
-		source BuildVariable
-		
-		# 拷贝 ipa
-		if ls "${export_path}"/*.ipa >/dev/null 2>&1; then
-		  cp "${export_path}"/*.ipa "${TARGET_DIR}/"
-		fi
-		# 拷贝 .xcarchive
-		if [ -d "${archive_path}" ]; then
-		  cp -R "${archive_path}" "${TARGET_DIR}/"
-		fi
-		cp BuildVariable "${TARGET_DIR}/" || true
-	"""
-
-    archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*",
-                     fingerprint: true,
-                     onlyIfSuccessful: false
-    }
-
-
-      withKubeConfig([credentialsId: env.KCFG_ID]) {
-        sh "kubectl -n ci delete pod macos-build-${BUILD_NODE} --ignore-not-found"
-        sh "kubectl -n ci delete secret jenkins-macos-${BUILD_NODE} --ignore-not-found"
-
+    always {   
+    	 withKubeConfig([credentialsId: env.KCFG_ID]) {
+    	   sh "kubectl -n ci delete pod macos-build-${BUILD_NODE} --ignore-not-found"
+       	   sh "kubectl -n ci delete secret jenkins-macos-${BUILD_NODE} --ignore-not-found"
       }
     }
-  
+  }
 }
