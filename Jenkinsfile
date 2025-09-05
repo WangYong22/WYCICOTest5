@@ -206,6 +206,11 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			hostname
 			sw_vers
 			
+			PROFILE_FILE="${HOME}/jenkins_home/profiles/WYCICOTest5V2.provisionprofile"
+            PROFILE_UUID=$(grep -A1 UUID -a "$PROFILE_FILE" | grep -io "[-A-F0-9]\\{36\\}" | head -1)
+			mkdir -p "${HOME}/Library/MobileDevice/Provisioning Profiles"
+			cp "$PROFILE_FILE" "${HOME}/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
+
 			# Profile 文件名字 
 			CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
 			
@@ -213,13 +218,12 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			Project_Name="WYCICOTest5"
 			
 			# AdHoc版本的Bundle ID
-			BundleID=com.wangyong2.WYCICOTest5
+			BundleID=com.WangYong2.WYCICOTest5
 			
 			#DEVELOPMENT_TEAM编码
 			DEVELOPMENT_TEAM="64KDUQCYEB"
 			
-			# Profile 文件 UUID
-			PROFILE_UUID="a838c815-d2ed-4c15-aa6c-ea1fedcbc049"
+		
 			
 			# 代码签名标识
 			CODE_SIGN_IDENTITY="Apple Development:Yong Wang(LFBT5QQQ6J)"
