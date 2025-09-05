@@ -242,7 +242,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			
 			
 			export_path="${HOME}/project/build/${Project_Name}"
-			export_name="${export_path}/${project_scheme}_${APP_VERSION}.ipa"
+			export_name="${export_path}/${project_scheme}.ipa"
 			
 			# archive 目标路径
 			build_dir="${WORKSPACE}/build"
@@ -253,7 +253,6 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			
 			
 			# 构建变量写入文件
-			echo "APP_VERSION=${APP_VERSION}"
 			project_workspace=${project_workspace}
 			project_scheme=${project_scheme}
 			export_path=${export_path}
