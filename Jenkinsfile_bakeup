@@ -192,157 +192,202 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
       }
     }
 
-	 stage('Build on macOS') {
-	  agent { label "${env.BUILD_NODE}" }
-	
-	  steps {
-		// 1) 连通性
-		sh '''#!/bin/bash
-		set -euo pipefail
-		hostname
-		sw_vers
-		xcodebuild -version || true
-		echo "=== Ping 17.87.2.137 ==="
-		ping -c 4 17.87.2.137 || echo "WARN: ping failed"
-		'''
-	
-		// 2) 拉取 provisioning profile（用 Jenkins 中 ID=ssh17 的私钥）
-		withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
-										   keyFileVariable: 'SSH_KEY',
-										   usernameVariable: 'SSH_USER')]) {
-		  sh '''#!/bin/bash
-			set -euo pipefail
-			REMOTE="17.87.2.137"
-			REMOTE_FILE="/Users/mdsadmin/WYCICOTest5V2.provisionprofile"     # <— 确认远端真实文件名
-			LOCAL="/tmp/WYCICOTest5V2.provisionprofile"
+    stage('Build on macOS') {
+      agent { label "${env.BUILD_NODE}" }    // 等 inbound agent 上线
+      steps {
+        sh '''#!/bin/bash
+           set -euo pipefail
+    	   xcodebuild -version || true
+           # TODO: 放实际构建命令
+          
+           #脚本开始————————————————
+				
+			hostname
+			sw_vers		
+			echo "=== 尝试 ping 宿主机网关 "
+            ping -c 4 17.87.2.137 || echo "⚠️ Ping 17.87.2.137"
+            '''
+            
+            withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+                                   keyFileVariable: 'SSH_KEY',
+                                   usernameVariable: 'SSH_USER')]) {
+               sh '''#!/bin/bash
+               set -euo pipefail
+               scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+               "$SSH_USER"@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.provisionprofile \
+               /tmp/WYCICOTest5V2.provisionprofile
+               '''
+               }   
 			
-			echo "[SCP] $REMOTE:$REMOTE_FILE -> $LOCAL"
-			scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
-				"$SSH_USER@$REMOTE:$REMOTE_FILE" "$LOCAL"
-			'''
-		  }
-	
-		// 3) 安装 profile（解析 UUID）
 		sh '''#!/bin/bash
-		set -euo pipefail
-		PROFILE="/tmp/WYCICOTest5V2.mobileprovision"
-		UUID=$(security cms -D -i "$PROFILE" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin)
-		echo "[PROFILE] UUID=$UUID"
-		mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-		cp "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
-		'''
-	
-		// 4) 构建（保持纯 shell；不要塞 Groovy 语句）
-		sh '''#!/bin/bash
-		set -euo pipefail
+          set -euo pipefail
+			PROFILE_FILE="/tmp/WYCICOTest5V2.provisionprofile"
+            PROFILE_UUID=$(grep -A1 UUID -a "$PROFILE_FILE" | grep -io "[-A-F0-9]\\{36\\}" | head -1)
+			mkdir -p "${HOME}/Library/MobileDevice/Provisioning Profiles"
+			cp "$PROFILE_FILE" "${HOME}/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
+            ‘’‘
+            
+            sh '''#!/bin/bash
+            set -euo pipefail
+			# Profile 文件名字 
+			CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
+			
+			#工程名字(Target名字)
+			Project_Name="WYCICOTest5"
+			
+			# AdHoc版本的Bundle ID
+			BundleID=com.WangYong2.WYCICOTest5
+			
+			#DEVELOPMENT_TEAM编码
+			DEVELOPMENT_TEAM="64KDUQCYEB"
+			
 		
-		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
-		Project_Name="WYCICOTest5"
-		BundleID="com.wangyong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
-		DEVELOPMENT_TEAM="64KDUQCYEB"
-		CODE_SIGN_IDENTITY="Apple Development: Yong Wang (LFBT5QQQ6J)"
-		Configuration="Debug"
-		project_scheme="WYCICOTest5"
-		project_workspace="${Project_Name}.xcworkspace"
-		
-		build_dir="${WORKSPACE}/build"
-		archive_path="${build_dir}/${project_scheme}.xcarchive"
-		export_path="${HOME}/project/build/${Project_Name}"
-		exportOptionsPlist="${build_dir}/${project_scheme}.plist"
-		
-		mkdir -p "${build_dir}" "${export_path}"
-		
-		# 记录变量
-		cat > BuildVariable <<EOF
-		project_workspace=${project_workspace}
-		project_scheme=${project_scheme}
-		export_path=${export_path}
-		build_dir=${build_dir}
-		archive_path=${archive_path}
-		exportOptionsPlist=${exportOptionsPlist}
-		EOF
-		
-		# 生成 exportOptionsPlist（手工签名，用 Name 绑定 profile）
-		cat > "${exportOptionsPlist}" <<PL
-		<?xml version="1.0" encoding="UTF-8"?>
-		<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-		<plist version="1.0"><dict>
-		  <key>signingStyle</key><string>manual</string>
-		  <key>method</key><string>development</string>
-		  <key>signingCertificate</key><string>Apple Development</string>
-		  <key>provisioningProfiles</key><dict>
-			<key>${BundleID}</key><string>${CPROVISIONING_PROFILE_NAME}</string>
-		  </dict>
-		  <key>stripSwiftSymbols</key><true/>
-		  <key>compileBitcode</key><true/>
-		</dict></plist>
-		PL
-		
-		# 钥匙串（建议用 Jenkins Secret 注入，这里先示例）
-		LOGIN_KC="${HOME}/Library/Keychains/login.keychain-db"
-		security unlock-keychain -p test "$LOGIN_KC"
-		security default-keychain -s "$LOGIN_KC"
-		security list-keychains -d user -s "$LOGIN_KC"
-		security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k test "$LOGIN_KC"
-		
-		# 构建 Archive
-		xcodebuild \
-		  -workspace "$project_workspace" \
-		  -scheme "$project_scheme" \
-		  -configuration "$Configuration" \
-		  clean archive \
-		  -archivePath "$archive_path" \
-		  DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-		  CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
-		  PRODUCT_BUNDLE_IDENTIFIER="$BundleID" \
-		  PROVISIONING_PROFILE_SPECIFIER="$CPROVISIONING_PROFILE_NAME" \
-		  -allowProvisioningUpdates \
-		  -allowProvisioningDeviceRegistration \
-		  -UseModernBuildSystem=NO \
-		  -quiet
-		
-		# 导出 IPA
-		xcodebuild -exportArchive \
-		  -archivePath "$archive_path" \
-		  -exportOptionsPlist "$exportOptionsPlist" \
-		  -exportPath "$export_path" \
-		  -quiet
-		
-		echo "[BUILD] exported:"
-		ls -lh "$export_path" || true
-		'''
-		  }
-		
-		  // 5) 在这个 stage 的 post 里收集产物（仍在 macOS 节点上）
-		  post {
-			always {
-			  script {
-				def runDir   = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
-				def wsTarget = "buildDir/${runDir}"
-				def absTarget= "/var/jenkins_home/buildDir/${runDir}"
-		
-				sh """#!/bin/bash
-		set -euo pipefail
-		mkdir -p "${wsTarget}" "${absTarget}"
-		[ -f BuildVariable ] && source BuildVariable || true
-		export_path=\${export_path:-}
-		archive_path=\${archive_path:-}
-		if [ -n "\$export_path" ] && ls "\$export_path"/*.ipa >/dev/null 2>&1; then
-		  cp "\$export_path"/*.ipa "${wsTarget}/" && cp "\$export_path"/*.ipa "${absTarget}/" || true
-		fi
-		if [ -n "\$archive_path" ] && [ -d "\$archive_path" ]; then
-		  cp -R "\$archive_path" "${wsTarget}/" && cp -R "\$archive_path" "${absTarget}/" || true
-		fi
-		[ -f BuildVariable ] && cp BuildVariable "${wsTarget}/" "${absTarget}/" || true
-		"""
-		
-				archiveArtifacts artifacts: "${wsTarget}/**/*",
-								 fingerprint: true,
-								 onlyIfSuccessful: false
-			  }
+			
+			# 代码签名标识
+			CODE_SIGN_IDENTITY="Apple Development:Yong Wang(LFBT5QQQ6J)"
+			
+			
+			# 打包的环境，正式环境为空，可选 {'Develop';  'Release';  ''}
+			APP_ENV="Develop"
+			
+			#配置环境，Release或者Debug
+			Configuration=Debug
+			
+			# 项目Scheme名称，通常和工程名字相同
+			project_scheme="WYCICOTest5"
+			
+			# 打开本地钥匙串的密码，电脑管理员账户的密码
+			KCpassword=test
+			
+			# build 路径
+			project_workspace="${Project_Name}.xcworkspace"
+			
+			
+			export_path="${HOME}/project/build/${Project_Name}"
+			export_name="${export_path}/${project_scheme}.ipa"
+			
+			# archive 目标路径
+			build_dir="${WORKSPACE}/build"
+			archive_path="${build_dir}/${project_scheme}.xcarchive"
+			
+			#plist文件
+			exportOptionsPlist="${build_dir}/${project_scheme}.plist"
+			
+			
+			# 构建变量写入文件
+			project_workspace=${project_workspace}
+			project_scheme=${project_scheme}
+			export_path=${export_path}
+			export_name=${export_name}
+			build_dir=${build_dir}
+			archive_path=${archive_path}
+			exportOptionsPlist=${exportOptionsPlist} > BuildVariable
+			
+			
+			
+			func_export_plist(){
+			echo '<?xml version="1.0" encoding="UTF-8"?>
+			<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+			<plist version="1.0">
+			<dict>
+					<key>signingStyle</key>
+					<string>manual</string>
+					<key>method</key>
+					<string>development</string>
+					<key>signingCertificate</key>
+					<string>Mac Developer</string>
+					<key>provisioningProfiles</key>
+					<dict>
+							<key>'${BundleID}'</key>
+							<string>'${PROFILE_UUID}'</string>
+					</dict>
+					<key>iCloudContainerEnvironment</key>
+					<string>Development</string>
+					<key>stripSwiftSymbols</key>
+					<true/>
+					<key>compileBitcode</key>
+					<true/>
+			</dict>
+			</plist>' > ${exportOptionsPlist}
 			}
-		  }
-		}
+			 
+			func_build(){
+			   
+				# login证书解锁
+				security unlock-keychain -p "$KCpassword" ${HOME}/Library/Keychains/login.keychain-db    
+			   
+			   #给codesign 访问 login 证书权限
+			   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCpassword" ${HOME}/Library/Keychains/login.keychain-db
+			   
+			   #测试 codesign能否正常使用证书
+			   cp "/usr/bin/true" "MyTrue"
+			   codesign -s "Apple Development" -f "MyTrue" 
+			   
+				
+				security show-keychain-info ${HOME}/Library/Keychains/login.keychain-db
+				
+				#查看可用证书
+				security find-identity -vp codesigning
+			
+			  # 清理
+			  #  xcodebuild clean -scheme $project_scheme -configuration $Configuration 
+			  # 构建 archive 包
+			  xcodebuild archive  \
+				-scheme $project_scheme \
+				-configuration $Configuration \
+				clean archive \
+				-archivePath $archive_path \
+				BUILD_DIR="$build_dir"  \
+				DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+				-allowProvisioningUpdates \
+				-allowProvisioningDeviceRegistration \
+				-UseModernBuildSystem=NO \
+				BUILD_DIR="$build_dir"  \
+				PROVISIONING_PROFILE_SPECIFIER="${CPROVISIONING_PROFILE_NAME}" \
+				PROVISIONING_PROFILE="${PROFILE_UUID}" \
+			    PRODUCT_BUNDLE_IDENTIFIER="${BundleID}" \
+				-quiet
+			  
+			  #输出ipa包
+			  xcodebuild -exportArchive -archivePath $archive_path -exportOptionsPlist $exportOptionsPlist -exportPath $export_path
+			}
+			
+			cd ${WORKSPACE}
+			mkdir -p build
+			# 编译
+			func_export_plist
+			func_build
+			
+	def TARGET_ROOT = "/var/jenkins_home/buildDir"
+    	def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
+    	def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
+
+    	
+		
+	mkdir -p "${TARGET_DIR}"
+	# 读取我们在 sh 里写的变量文件
+	source BuildVariable
+
+	# 拷贝 ipa
+	if ls "${export_path}"/*.ipa >/dev/null 2>&1; then
+	  cp "${export_path}"/*.ipa "${TARGET_DIR}/"
+	fi
+	# 拷贝 .xcarchive
+	if [ -d "${archive_path}" ]; then
+	  cp -R "${archive_path}" "${TARGET_DIR}/"
+	fi
+	  cp BuildVariable "${TARGET_DIR}/" || true
+  
+
+   archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*",
+		fingerprint: true,
+		onlyIfSuccessful: false
+			#脚本结束————————————————
+           
+        '''
+      }
+    }
+  }
 
   post {
     always {   
