@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-macos
+  namespace: ci
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ci
+  name: jenkins-macos
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-macos
+  namespace: ci
+subjects:
+- kind: ServiceAccount
+  name: jenkins-macos
+  namespace: ci
+roleRef:
+  kind: Role
+  name: jenkins-macos
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macos-build-__BUILD_ID__
+  namespace: ci
+spec:
+  serviceAccountName: jenkins-macos
+  volumes:
+    - name: shared-data
+      emptyDir: {}
+  containers:
+  - name: compute
+    image: "17.87.2.137:5001/macos-vm:15_6"
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 4
+        memory: 12Gi
+    env:
+    - name: VZ_SSH_USER
+      value: "test"
+    - name: VZ_SSH_PASSWORD
+      value: "test"
+   # - name: POD_IP
+   #   valueFrom:
+   #     fieldRef:
+   #       fieldPath: status.podIP
+    volumeMounts:
+        - name: shared-data
+          mountPath: /tmpp
+  # lifecycle:
+   #    postStart:
+   #     exec:
+   #       command: 
+   #       - /bin/sh
+   #       - -c
+          #- >
+          #  # 1) 可忽略失败
+          #  #/usr/sbin/networksetup -setproxyautodiscovery Ethernet on || true
+    
+            # 2) 直接取 en0 的 IP（先用 ipconfig，不行再用 ifconfig+awk）
+          #  /usr/sbin/ipconfig getifaddr en0 1>/tmpp/vm_ip.txt 2>/dev/null
+          #  || ( /sbin/ifconfig en0 2>/dev/null | /usr/bin/awk '/inet /{print $2}' | /usr/bin/head -n1 >/tmpp/vm_ip.txt || true );
+          #  /bin/chmod 0644 /tmpp/vm_ip.txt || true;
+          #  exit 0
+            # 3) 写到共享卷
+            #/bin/printf "%s" "${VM_IP:-<empty>}" > /tmpp/vm_ip.txt || true
+            #/bin/chmod 0644 /tmpp/vm_ip.txt || true
+    
+            # 4) 同时写一份日志，方便 sidecar 查看
+            #{
+            #  /bin/date -Is
+            #  /bin/echo "VM_IP=${VM_IP:-<empty>}"
+            #} >> /tmpp/compute-poststart.log 2>&1 || true
+    
+            # 5) 明确成功退出，避免 postStart 失败
+            #exit 0       
+            
+            
+  - name: gitlab-runner
+    image: "gitlab/gitlab-runner:ubuntu-v16.8.0"
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: MY_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+  #    - name: MY_POD_IP
+  #      valueFrom:
+  #        fieldRef:
+  #          fieldPath: status.podIP   # ← 只在 sidecar 用 Downward API  
+    volumeMounts:
+      - name: shared-data
+        mountPath: /tmpp
+    command: 
+      - /bin/sh
+      - -lc
+      - >
+        printf '%s\n' "$MY_POD_IP" > /tmpp/pod_ip.txt;
+        chmod 0644 /tmp/pod_ip.txt;
+        trap : TERM INT; sleep infinity & wait
+        
+ #   lifecycle:
+      #postStart:
+        #exec:
+          #command:
+          #- /bin/sh
+          #- -c
+          #- |
+            #exec >/tmpp/sidecar.log 2>&1
+            #set -eux
+
+            #APISERVER="https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"
+            #SA="/var/run/secrets/kubernetes.io/serviceaccount"
+            #NAMESPACE="$(cat "${SA}/namespace")"
+            #TOKEN="$(cat "${SA}/token")"
+            #CACERT="${SA}/ca.crt"
+            #PODNAME="$(hostname)"
+
+            #get_pod_ip() {
+             # curl -sS --cacert "${CACERT}" \
+              #  -H "Authorization: Bearer ${TOKEN}" \
+             #   "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${PODNAME}" \
+             # | tee /tmpp/get.txt \
+             # | sed -n 's/.*"podIP"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1
+           # }
+
+            #POD_IP=""
+           # RETRY_DELAY=5
+            #while [ -z "${POD_IP}" ]; do
+             # POD_IP="$(get_pod_ip || true)"
+              #[ -z "${POD_IP}" ] && echo "podIP not found, retry in ${RETRY_DELAY}s..." && sleep "${RETRY_DELAY}"
+            #done
+
+            #echo "Final POD_IP=${POD_IP}" | tee /tmpp/pod_ip.txt
+            #chmod 0644 /tmpp/pod_ip.txt /tmpp/get.txt || true
+
+            #TARGET_HOST="192.168.64.133"
+            #TARGET_USER="test"
+           # TARGET_PASS="test"
+           # TARGET_DIR="/Users/test/podinfo"
+
+           # if command -v sshpass >/dev/null 2>&1; then
+          #    sshpass -p "${TARGET_PASS}" ssh -o StrictHostKeyChecking=no "${TARGET_USER}@${TARGET_HOST}" "mkdir -p '${TARGET_DIR}'" || true
+          #    sshpass -p "${TARGET_PASS}" scp -o StrictHostKeyChecking=no /tmpp/get.txt /tmpp/pod_ip.txt "${TARGET_USER}@${TARGET_HOST}:${TARGET_DIR}/" || true
+          #  else
+          #    echo "sshpass not found, skip scp"
+           # fi
+
+  
+  tolerations:
+  - key: "virtual-kubelet.io/provider"
+    operator: "Equal"
+    value: "macos-vz"
+    effect: "NoSchedule"
+  nodeSelector:
+    kubernetes.io/os: "darwin"

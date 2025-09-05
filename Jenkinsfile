@@ -195,9 +195,183 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
     stage('Build on macOS') {
       agent { label "${env.BUILD_NODE}" }    // 等 inbound agent 上线
       steps {
-        sh '''
-          xcodebuild -version || true
-          # TODO: 放你的实际构建命令
+        sh '''#!/bin/bash
+    set -euo pipefail
+    xcodebuild -version || true
+    # TODO: 放实际构建命令
+          
+    #脚本开始————————————————
+			
+			
+			hostname
+			sw_vers
+			
+			# Profile 文件名字 
+			CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
+			
+			#工程名字(Target名字)
+			Project_Name="WYCICOTest5"
+			
+			# AdHoc版本的Bundle ID
+			BundleID=com.wangyong2.WYCICOTest5
+			
+			#DEVELOPMENT_TEAM编码
+			DEVELOPMENT_TEAM="64KDUQCYEB"
+			
+			# Profile 文件 UUID
+			PROFILE_UUID="a838c815-d2ed-4c15-aa6c-ea1fedcbc049"
+			
+			# 代码签名标识
+			CODE_SIGN_IDENTITY="Apple Development:Yong Wang(LFBT5QQQ6J)"
+			
+			
+			# 打包的环境，正式环境为空，可选 {'Develop';  'Release';  ''}
+			APP_ENV="Develop"
+			
+			#配置环境，Release或者Debug
+			Configuration=Debug
+			
+			# 项目Scheme名称，通常和工程名字相同
+			project_scheme="WYCICOTest5"
+			
+			# 打开本地钥匙串的密码，电脑管理员账户的密码
+			KCpassword=test
+			
+			# build 路径
+			project_workspace="${Project_Name}.xcworkspace"
+			
+			
+			export_path="${HOME}/project/build/${Project_Name}""
+			export_name="${export_path}/${project_scheme}_${APP_VERSION}.ipa"
+			
+			# archive 目标路径
+			build_dir="${WORKSPACE}/build"
+			archive_path="${build_dir}/${project_scheme}.xcarchive"
+			
+			#plist文件
+			exportOptionsPlist="${build_dir}/${project_scheme}.plist"
+			
+			
+			# 构建变量写入文件
+			echo "APP_VERSION=${APP_VERSION}"
+			project_workspace=${project_workspace}
+			project_scheme=${project_scheme}
+			export_path=${export_path}
+			export_name=${export_name}
+			build_dir=${build_dir}
+			archive_path=${archive_path}
+			exportOptionsPlist=${exportOptionsPlist} > BuildVariable
+			
+			
+			
+			func_export_plist(){
+			echo '<?xml version="1.0" encoding="UTF-8"?>
+			<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+			<plist version="1.0">
+			<dict>
+					<key>signingStyle</key>
+					<string>manual</string>
+					<key>method</key>
+					<string>development</string>
+					<key>signingCertificate</key>
+					<string>Mac Developer</string>
+					<key>provisioningProfiles</key>
+					<dict>
+							<key>'${BundleID}'</key>
+							<string>'${PROFILE_UUID}'</string>
+					</dict>
+					<key>iCloudContainerEnvironment</key>
+					<string>Development</string>
+					<key>stripSwiftSymbols</key>
+					<true/>
+					<key>compileBitcode</key>
+					<true/>
+			</dict>
+			</plist>' > ${exportOptionsPlist}
+			}
+			 
+			func_build(){
+			   
+				# login证书解锁
+				security unlock-keychain -p "$KCpassword" ${HOME}/Library/Keychains/login.keychain-db    
+			   
+			   #给codesign 访问 login 证书权限
+			   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCpassword" ${HOME}/Library/Keychains/login.keychain-db
+			   
+			   #测试 codesign能否正常使用证书
+			   cp "/usr/bin/true" "MyTrue"
+			   codesign -s "Apple Development" -f "MyTrue" 
+			   
+				
+				security show-keychain-info ${HOME}/Library/Keychains/login.keychain-db
+				
+				#查看可用证书
+				security find-identity -vp codesigning
+			
+				# 清理
+			  #  xcodebuild clean -scheme $project_scheme -configuration $Configuration 
+				# 构建 archive 包
+				xcodebuild archive  \
+				-scheme $project_scheme \
+				-configuration $Configuration \
+				clean archive \
+				-archivePath $archive_path \
+				BUILD_DIR="$build_dir"  \
+				DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+				-allowProvisioningUpdates \
+				-allowProvisioningDeviceRegistration \
+				-UseModernBuildSystem=NO \
+				BUILD_DIR="$build_dir"  \
+				PROVISIONING_PROFILE_SPECIFIER="${CPROVISIONING_PROFILE_NAME}" \
+				PROVISIONING_PROFILE="${PROFILE_UUID}" \
+			   PRODUCT_BUNDLE_IDENTIFIER="${BundleID}" \
+				-quiet
+			  
+				#输出ipa包
+				xcodebuild -exportArchive -archivePath $archive_path -exportOptionsPlist $exportOptionsPlist -exportPath $export_path
+			}
+			
+			cd ${WORKSPACE}
+			mkdir -p build
+			# 编译
+			func_export_plist
+			func_build
+			
+			post {
+			  always {
+				// 目标根目录
+				def TARGET_ROOT = "/var/jenkins_home/buildDir"
+				// 例如 "22#4"
+				def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
+				def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
+			
+				sh """#!/bin/bash
+			set -euo pipefail
+			mkdir -p "${TARGET_DIR}"
+			
+			# 拷贝 ipa（你的脚本里导出到 \$EXPORT_PATH）
+			if ls "\$EXPORT_PATH"/*.ipa >/dev/null 2>&1; then
+			  cp "\$EXPORT_PATH"/*.ipa "${TARGET_DIR}/"
+			fi
+			
+			# 拷贝整个 .xcarchive 目录（你的脚本里是 \$ARCHIVE_PATH）
+			if [ -d "\$ARCHIVE_PATH" ]; then
+			  cp -R "\$ARCHIVE_PATH" "${TARGET_DIR}/"
+			fi
+			
+			# 也可以把生成的变量文件拷贝过去，便于排查
+			[ -f BuildVariable ] && cp BuildVariable "${TARGET_DIR}/" || true
+			"""
+			
+				// 让 Jenkins 页面也能直接下载到（可选）
+				archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*", fingerprint: true, onlyIfSuccessful: false
+			  }
+			}
+			#脚本结束————————————————
+
+          
+          
+          
         '''
       }
     }
