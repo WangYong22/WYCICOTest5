@@ -208,8 +208,16 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			
 			echo "=== 尝试 ping 宿主机网关 "
             ping -c 4 17.87.2.137 || echo "⚠️ Ping 17.87.2.137"
-			sshpass -p 'abcd1234' scp -o StrictHostKeyChecking=no \
-            mdsadmin@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.mobileprovision /tmp/WYCICOTest5V2.provisionprofile
+            withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+                                   keyFileVariable: 'SSH_KEY',
+                                   usernameVariable: 'SSH_USER')]) {
+              sh '''
+                scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+                    "$SSH_USER"@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.mobileprovision \
+                    /tmp/WYCICOTest5V2.mobileprovision
+                 '''
+            }
+			
 			
 			PROFILE_FILE="/tmp/profiles/WYCICOTest5V2.provisionprofile"
             PROFILE_UUID=$(grep -A1 UUID -a "$PROFILE_FILE" | grep -io "[-A-F0-9]\\{36\\}" | head -1)
