@@ -206,7 +206,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			hostname
 			sw_vers
 			
-			PROFILE_FILE="${HOME}/jenkins_home/profiles/WYCICOTest5V2.provisionprofile"
+			PROFILE_FILE="/var/jenkins_home/profiles/WYCICOTest5V2.provisionprofile"
             PROFILE_UUID=$(grep -A1 UUID -a "$PROFILE_FILE" | grep -io "[-A-F0-9]\\{36\\}" | head -1)
 			mkdir -p "${HOME}/Library/MobileDevice/Provisioning Profiles"
 			cp "$PROFILE_FILE" "${HOME}/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
