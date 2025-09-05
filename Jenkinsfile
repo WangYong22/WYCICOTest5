@@ -317,33 +317,62 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  post {
 			always {
 			  script {
-				def runDir   = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
-				def wsTarget = "buildDir/${runDir}"
-				def absTarget= "/var/jenkins_home/buildDir/${runDir}"
-		
-				sh """#!/bin/bash
+			  withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+                                   keyFileVariable: 'SSH_KEY',
+                                   usernameVariable: 'SSH_USER')]) {
+		sh '''#!/bin/bash
 		set -euo pipefail
-		mkdir -p "${wsTarget}" "${absTarget}"
-		[ -f BuildVariable ] && source BuildVariable || true
-		export_path=\${export_path:-}
-		archive_path=\${archive_path:-}
-		if [ -n "\$export_path" ] && ls "\$export_path"/*.ipa >/dev/null 2>&1; then
-		  cp "\$export_path"/*.ipa "${wsTarget}/" && cp "\$export_path"/*.ipa "${absTarget}/" || true
-		fi
-		if [ -n "\$archive_path" ] && [ -d "\$archive_path" ]; then
-		  cp -R "\$archive_path" "${wsTarget}/" && cp -R "\$archive_path" "${absTarget}/" || true
-		fi
-		[ -f BuildVariable ] && cp BuildVariable "${wsTarget}/" "${absTarget}/" || true
-		"""
 		
-				archiveArtifacts artifacts: "${wsTarget}/**/*",
-								 fingerprint: true,
-								 onlyIfSuccessful: false
+		REMOTE="17.87.2.137"
+		REMOTE_BASE="/Users/mdsadmin/Documents"
+		RUN_DIR="${JOB_BASE_NAME}#${BUILD_NUMBER}"
+		REMOTE_DIR="${REMOTE_BASE}/${RUN_DIR}"
+		
+		# 读取构建阶段写下的变量；做兜底，避免 set -u 触发
+		[ -f BuildVariable ] && source BuildVariable || true
+		export_path=${export_path:-}
+		archive_path=${archive_path:-}
+		project_scheme=${project_scheme:-app}
+		
+		echo "[REMOTE] mkdir -p ${REMOTE_DIR}"
+		ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+			"$SSH_USER@$REMOTE" "mkdir -p \"${REMOTE_DIR}\""
+		
+		# 1) 传 ipa
+		if [ -n "$export_path" ] && ls "$export_path"/*.ipa >/dev/null 2>&1; then
+		  echo "[UPLOAD] ipa -> ${REMOTE}:${REMOTE_DIR}"
+		  scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+			  "$export_path"/*.ipa \
+			  "$SSH_USER@$REMOTE:${REMOTE_DIR}/"
+		else
+		  echo "[UPLOAD] no ipa found under ${export_path}"
+		fi
+		
+		# 2) 传 .xcarchive（用 rsync 更快且可断点续传）
+		if [ -n "$archive_path" ] && [ -d "$archive_path" ]; then
+		  echo "[UPLOAD] xcarchive -> ${REMOTE}:${REMOTE_DIR}/${project_scheme}.xcarchive/"
+		  rsync -a \
+			-e "ssh -i $SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+			"$archive_path"/ \
+			"$SSH_USER@$REMOTE:${REMOTE_DIR}/${project_scheme}.xcarchive/"
+		else
+		  echo "[UPLOAD] no xcarchive dir at ${archive_path}"
+		fi
+		
+		# 3) 附带上传变量文件，便于远端排查
+		[ -f BuildVariable ] && scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+			BuildVariable "$SSH_USER@$REMOTE:${REMOTE_DIR}/" || true
+		
+		echo "[DONE] artifacts uploaded to ${REMOTE}:${REMOTE_DIR}"
+		'''
+		}
 			  }
 			}
 		  }
 		}
       }
+  
+  
   
   post {
     always {   
