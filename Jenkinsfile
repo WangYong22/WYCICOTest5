@@ -343,7 +343,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			}
 		  }
 		}
-
+      }
+  
   post {
     always {   
     	 withKubeConfig([credentialsId: env.KCFG_ID]) {
