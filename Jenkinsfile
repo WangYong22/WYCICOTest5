@@ -192,18 +192,23 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
       }
     }
     
-	stage('Debug: List Credentials') {
+	stage('Debug: check ssh17') {
 	  steps {
-		script {
-		  def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
-			com.cloudbees.plugins.credentials.common.StandardCredentials.class,
-			Jenkins.instance, null, null
-		  )
-		  creds.each { c -> echo "Cred ID: ${c.id}" }
+		withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+										   keyFileVariable: 'SSH_KEY',
+										   usernameVariable: 'SSH_USER')]) {
+		  sh '''#!/bin/bash
+	set -euo pipefail
+	echo "[CRED] username=$SSH_USER"
+	if [ -f "$SSH_KEY" ]; then echo "[CRED] key file exists: $SSH_KEY"; else echo "[CRED] key file MISSING"; fi
+	
+	# 尝试连远端服务器做一次简单命令
+	ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+		"$SSH_USER@17.87.2.137" 'echo "[REMOTE] OK from $(hostname)"'
+	'''
 		}
 	  }
 	}
-
 
 
 	 stage('Build on macOS') {
