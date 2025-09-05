@@ -380,5 +380,5 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 
       }
     }
-  }
+  
 }
