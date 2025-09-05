@@ -192,22 +192,24 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
       }
     }
     
-     steps {
-	  script {
-		def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
-		  com.cloudbees.plugins.credentials.common.StandardCredentials.class,
-		  Jenkins.instance,
-		  null,
-		  null
-		)
-		creds.each { println("Cred ID: ${it.id}") }
-	  }
-	}
+
 
 
 
 	 stage('Build on macOS') {
 	  agent { label "${env.BUILD_NODE}" }
+	
+	  steps {
+		  script {
+			def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+			  com.cloudbees.plugins.credentials.common.StandardCredentials.class,
+			  Jenkins.instance,
+			  null,
+			  null
+			)
+			creds.each { println("Cred ID: ${it.id}") }
+		  }
+		}
 	
 	  steps {
 		// 1) 连通性
