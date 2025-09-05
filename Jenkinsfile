@@ -214,8 +214,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
                                    usernameVariable: 'SSH_USER')]) 
              {sh '''
                 scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
-                    "$SSH_USER"@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.mobileprovision \
-                    /tmp/WYCICOTest5V2.mobileprovision
+                "$SSH_USER"@17.87.2.137:/Users/mdsadmin/WYCICOTest5V2.mobileprovision \
+                /tmp/WYCICOTest5V2.mobileprovision
             '''}
 			
 			
