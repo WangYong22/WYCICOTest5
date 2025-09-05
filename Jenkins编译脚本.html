@@ -5,19 +5,19 @@ hostname
 sw_vers
 
 # Profile 文件名字 
-CPROVISIONING_PROFILE_NAME="temptest2"
+CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
 
 #工程名字(Target名字)
-Project_Name="temptest2"
+Project_Name="WYCICOTest5"
 
 # AdHoc版本的Bundle ID
-BundleID=com.wangyong2.temptest2
+BundleID=com.wangyong2.WYCICOTest5
 
 #DEVELOPMENT_TEAM编码
 DEVELOPMENT_TEAM="64KDUQCYEB"
 
 # Profile 文件 UUID
-PROFILE_UUID="f2ccad28-00c0-4684-be0b-c6098e123895"
+PROFILE_UUID="a838c815-d2ed-4c15-aa6c-ea1fedcbc049"
 
 # 代码签名标识
 CODE_SIGN_IDENTITY="Apple Development:Yong Wang(LFBT5QQQ6J)"
@@ -30,17 +30,17 @@ APP_ENV="Develop"
 Configuration=Debug
 
 # 项目Scheme名称，通常和工程名字相同
-project_scheme="temptest2"
+project_scheme="WYCICOTest5"
 
 # 打开本地钥匙串的密码，电脑管理员账户的密码
-KCpassword=778899
+KCpassword=test
 
 # build 路径
 project_workspace="${Project_Name}.xcworkspace"
 
 
-export_path=“${HOME}/project/build/${Project_Name}”
-export_name="${export_path}/${project_scheme}_${APP_VERSION}.ipa"
+export_path="${HOME}/project/build/${Project_Name}""
+export_name="${export_path}/${project_scheme}.ipa"
 
 # archive 目标路径
 build_dir="${WORKSPACE}/build"
@@ -51,7 +51,7 @@ exportOptionsPlist="${build_dir}/${project_scheme}.plist"
 
 
 # 构建变量写入文件
-echo "APP_VERSION=${APP_VERSION}"
+
 project_workspace=${project_workspace}
 project_scheme=${project_scheme}
 export_path=${export_path}
@@ -91,7 +91,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>
 func_build(){
    
     # login证书解锁
-    security unlock-keychain -p admin ${HOME}/Library/Keychains/login.keychain-db    
+    security unlock-keychain -p "$KCpassword" ${HOME}/Library/Keychains/login.keychain-db    
    
    #给codesign 访问 login 证书权限
    security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCpassword" ${HOME}/Library/Keychains/login.keychain-db
@@ -119,9 +119,9 @@ func_build(){
     -allowProvisioningUpdates \
     -allowProvisioningDeviceRegistration \
     -UseModernBuildSystem=NO \
-   BUILD_DIR="$build_dir"  \
+    BUILD_DIR="$build_dir"  \
     PROVISIONING_PROFILE_SPECIFIER="${CPROVISIONING_PROFILE_NAME}" \
-   PROVISIONING_PROFILE="${PROFILE_UUID}" \
+    PROVISIONING_PROFILE="${PROFILE_UUID}" \
    PRODUCT_BUNDLE_IDENTIFIER="${BundleID}" \
     -quiet
   
@@ -135,4 +135,34 @@ mkdir -p build
 func_export_plist
 func_build
 
+post {
+  always {
+    // 目标根目录
+    def TARGET_ROOT = "/var/jenkins_home/buildDir"
+    // 例如 "22#4"
+    def RUN_DIR = "${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}"
+    def TARGET_DIR = "${TARGET_ROOT}/${RUN_DIR}"
+
+    sh """#!/bin/bash
+set -euo pipefail
+mkdir -p "${TARGET_DIR}"
+
+# 拷贝 ipa（你的脚本里导出到 \$EXPORT_PATH）
+if ls "\$EXPORT_PATH"/*.ipa >/dev/null 2>&1; then
+  cp "\$EXPORT_PATH"/*.ipa "${TARGET_DIR}/"
+fi
+
+# 拷贝整个 .xcarchive 目录（你的脚本里是 \$ARCHIVE_PATH）
+if [ -d "\$ARCHIVE_PATH" ]; then
+  cp -R "\$ARCHIVE_PATH" "${TARGET_DIR}/"
+fi
+
+# 也可以把生成的变量文件拷贝过去，便于排查
+[ -f BuildVariable ] && cp BuildVariable "${TARGET_DIR}/" || true
+"""
+
+    // 让 Jenkins 页面也能直接下载到（可选）
+    archiveArtifacts artifacts: "buildDir/${env.JOB_BASE_NAME}#${env.BUILD_NUMBER}/**/*", fingerprint: true, onlyIfSuccessful: false
+  }
+}
 #脚本结束————————————————
