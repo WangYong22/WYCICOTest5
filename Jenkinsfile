@@ -330,7 +330,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		</dict></plist>
 		PL
 		
-		
+		command -v xcodebuild || { echo "xcodebuild not found in PATH=$PATH"; exit 127; }
 		# 构建 Archive
 		xcodebuild \
 		  -workspace "$project_workspace" \
