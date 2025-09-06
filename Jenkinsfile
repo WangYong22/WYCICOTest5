@@ -302,12 +302,9 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		archive_path="${build_dir}/${project_scheme}.xcarchive"
 		export_path="${HOME}/project/build/${Project_Name}"
 		exportOptionsPlist="${build_dir}/${project_scheme}.plist"	
-
 		
 		mkdir -p "${build_dir}" "${export_path}"
-		
-		echo "check1"
-		
+				
 		# 记录变量
 		cat > BuildVariable <<EOF
 		project_workspace=${project_workspace}
@@ -334,7 +331,7 @@ EOF
 		  <key>stripSwiftSymbols</key><true/>
 		  <key>compileBitcode</key><true/>
 		</dict></plist>
-		PL
+PL
 		echo "check4"
 		
 		# 构建 Archive
