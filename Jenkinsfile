@@ -316,15 +316,29 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  <key>compileBitcode</key><true/>
 		</dict></plist>
 		PL
+		'''
 		
-		# 钥匙串（建议用 Jenkins Secret 注入，这里先示例）
-		LOGIN_KC="${HOME}/Library/Keychains/login.keychain-db"
-		security unlock-keychain -p test "$LOGIN_KC"
-		security default-keychain -s "$LOGIN_KC"
-		security list-keychains -d user -s "$LOGIN_KC"
-		security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k test "$LOGIN_KC"
+		withCredentials([string(credentialsId: 'macos-login-keychain-pass', variable: 'KEYCHAIN_PASS')]) {
+		  sh '''#!/bin/bash
+		  set -euo pipefail
+		  set +u
+		  LOGIN_KC="${HOME}/Library/Keychains/login.keychain-db"
+		  KEYCHAIN_PASS="${KEYCHAIN_PASS:-}"
+		  set -u
+		
+		  : "${KEYCHAIN_PASS:?KEYCHAIN_PASS is empty — configure Jenkins credential 'macos-login-keychain-pass'}"
+		
+		  [ -f "$LOGIN_KC" ] || security create-keychain -p "${KEYCHAIN_PASS}" "$LOGIN_KC"
+		  security unlock-keychain -p "${KEYCHAIN_PASS}" "$LOGIN_KC"
+		  security default-keychain -s "$LOGIN_KC"
+		  security list-keychains -d user -s "$LOGIN_KC"
+		  security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${KEYCHAIN_PASS}" "$LOGIN_KC"
+		  '''
+		}
 		
 		# 构建 Archive
+		sh '''#!/bin/bash
+		set -euo pipefail
 		xcodebuild \
 		  -workspace "$project_workspace" \
 		  -scheme "$project_scheme" \
