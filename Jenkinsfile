@@ -192,7 +192,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
       }
     }
   
-	stage('Cred debug: ssh private key (ssh17)') {
+	stage('Cred debug: ssh private key (137ssh)') {
 	  steps {
 		withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
 										   keyFileVariable: 'SSH_KEY',
@@ -223,7 +223,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		ping -c 4 17.87.2.137 || echo "WARN: ping failed"
 		'''
 	
-		// 2) 拉取 provisioning profile（用 Jenkins 中 ID=ssh17 的私钥）
+		// 2) 拉取 provisioning profile（用 Jenkins 中 ID=137ssh 的私钥）
 		withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
 										   keyFileVariable: 'SSH_KEY',
 										   usernameVariable: 'SSH_USER')]) {
@@ -334,7 +334,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  post {
 			always {
 			  script {
-			  withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+			  withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
                                    keyFileVariable: 'SSH_KEY',
                                    usernameVariable: 'SSH_USER')]) {
 		sh '''#!/bin/bash
