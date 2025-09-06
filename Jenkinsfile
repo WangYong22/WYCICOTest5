@@ -193,17 +193,33 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
     }
     
 	stage('Debug: check ssh17') {
-	  steps {
-		withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
-										   keyFileVariable: 'SSH_KEY',
-										   usernameVariable: 'SSH_USER')]) {
-		  sh '''
-	        echo "SSH_USER=$SSH_USER"
-            echo "SSH_KEY=$SSH_KEY"
-            ls -l "$SSH_KEY" || true
-	      '''
-		}
-	  }
+		  steps {
+			echo '[DEBUG] before withCredentials'
+			catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+			  withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+												 keyFileVariable: 'SSH_KEY',
+												 usernameVariable: 'SSH_USER')]) {
+				echo "[DEBUG] got into withCredentials, SSH_USER var will be set"
+				sh '''#!/bin/bash
+		set -euo pipefail
+		
+		echo "[DEBUG] env check"
+		echo "SSH_USER=${SSH_USER:-<unset>}"
+		if [ -f "${SSH_KEY:-/nope}" ]; then
+		  echo "[DEBUG] SSH_KEY file exists at: $SSH_KEY"
+		  ls -l "$SSH_KEY"
+		else
+		  echo "[DEBUG] SSH_KEY MISSING"
+		fi
+		
+		echo "[DEBUG] try ssh -vvv to 17.87.2.137"
+		ssh -vvv -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+			"$SSH_USER@17.87.2.137" 'echo "[REMOTE] hello from $(hostname)"'
+		'''
+			  }
+			}
+			echo '[DEBUG] after withCredentials'
+		  }
 	}
 
 
