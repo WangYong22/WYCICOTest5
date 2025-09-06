@@ -243,6 +243,16 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		sh '''#!/bin/bash
 		set -euo pipefail
 		PROFILE="/tmp/WYCICOTest5V2.provisionprofile"
+		echo "==[CHECK] ls -l =="
+  		ls -l "$PROFILE" || { echo "ERROR: $PROFILE not found"; exit 2; }
+  		  echo "==[CHECK] head (cat preview) =="
+		  # 你点名要 cat，这里给出前几行（可能是二进制会花屏，属正常）
+		  head -n 5 "$PROFILE" || true
+		
+		  echo "==[CHECK] first bytes =="
+		  # 如果是二进制 CMS 容器，用十六进制前 64 字节更直观
+		  command -v xxd >/dev/null && xxd -l 64 -g 1 "$PROFILE" || true
+		
 		UUID=$(security cms -D -i "$PROFILE" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin)
 		echo "[PROFILE] UUID=$UUID"
 		mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
