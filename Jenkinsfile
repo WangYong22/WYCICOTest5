@@ -213,14 +213,29 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 	  agent { label "${env.BUILD_NODE}" }
 	
 	  steps {
+	    withCredentials([string(credentialsId: 'macos-login-keychain-pass', variable: 'KEYCHAIN_PASS')]) {
+		  sh '''#!/bin/bash
+		  set -euo pipefail
+		  set +u
+		  LOGIN_KC="${HOME}/Library/Keychains/login.keychain-db"
+		  KEYCHAIN_PASS="${KEYCHAIN_PASS:-}"
+		  set -u
+		
+		  : "${KEYCHAIN_PASS:?KEYCHAIN_PASS is empty — configure Jenkins credential 'macos-login-keychain-pass'}"
+		
+		  [ -f "$LOGIN_KC" ] || security create-keychain -p "${KEYCHAIN_PASS}" "$LOGIN_KC"
+		  security unlock-keychain -p "${KEYCHAIN_PASS}" "$LOGIN_KC"
+		  security default-keychain -s "$LOGIN_KC"
+		  security list-keychains -d user -s "$LOGIN_KC"
+		  security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${KEYCHAIN_PASS}" "$LOGIN_KC"
+		  '''
+		}
+	  
 		// 1) 连通性
 		sh '''#!/bin/bash
 		set -euo pipefail
 		hostname
 		sw_vers
-		xcodebuild -version || true
-		echo "=== Ping 17.87.2.137 ==="
-		ping -c 4 17.87.2.137 || echo "WARN: ping failed"
 		'''
 	
 		// 2) 拉取 provisioning profile（用 Jenkins 中 ID=137ssh 的私钥）
@@ -241,54 +256,52 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 	
 		// 3) 安装 profile（解析 UUID）
 		sh '''#!/bin/bash
-		set -euo pipefail
-		PROFILE="/tmp/WYCICOTest5V2.provisionprofile"
-		PLIST="/tmp/WYCICOTest5V2.plist"
-        SECERR="/tmp/security.err"
-        
-        echo "==[PARSE] security cms -> $PLIST =="
-		# 先尝试按 CMS 解包；失败时把错误打出来，并在是 XML 的情况下兜底
-		if /usr/bin/security cms -D -i "$PROFILE" > "$PLIST" 2>"$SECERR"; then
-		  echo "security cms OK"
-		else
-		  echo "security cms failed:"
-		  cat "$SECERR" || true
-		  if file "$PROFILE" | grep -qi 'XML'; then
-			echo "Detected XML plist; using it directly"
-			cp "$PROFILE" "$PLIST"
-		  else
-			exit 1
-		  fi
-		fi
-		
-		echo "==[VERIFY] plutil -lint =="
-		/usr/bin/plutil -lint "$PLIST"
-
-		echo "==[UUID] PlistBuddy =="
-		UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PLIST")
-		echo "[PROFILE] UUID=$UUID"
-		
-		echo "==[INSTALL]=="
-		/bin/mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-		/usr/bin/install -m 0644 "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
-		echo "Installed: $HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
+			set -euo pipefail
+			PROFILE="/tmp/WYCICOTest5V2.provisionprofile"
+			PLIST="/tmp/WYCICOTest5V2.plist"
+			SECERR="/tmp/security.err"
 			
+			echo "==[PARSE] security cms -> $PLIST =="
+			# 先尝试按 CMS 解包；失败时把错误打出来，并在是 XML 的情况下兜底
+			if /usr/bin/security cms -D -i "$PROFILE" > "$PLIST" 2>"$SECERR"; then
+			  echo "security cms OK"
+			else
+			  echo "security cms failed:"
+			  cat "$SECERR" || true
+			  if file "$PROFILE" | grep -qi 'XML'; then
+				echo "Detected XML plist; using it directly"
+				cp "$PROFILE" "$PLIST"
+			  else
+				exit 1
+			  fi
+			fi
+			
+			echo "==[VERIFY] plutil -lint =="
+			/usr/bin/plutil -lint "$PLIST"
+	
+			echo "==[UUID] PlistBuddy =="
+			UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PLIST")
+			echo "[PROFILE] UUID=$UUID"
+			
+			echo "==[INSTALL]=="
+			/bin/mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+			/usr/bin/install -m 0644 "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
+			echo "Installed: $HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
+				
 		# 4) 构建（保持纯 shell；不要塞 Groovy 语句）
 				
-		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
+		CPROVISIONING_PROFILE_NAME="${NAME_IN_PLIST:-WYCICOTest5V2}"
 		Project_Name="WYCICOTest5"
 		BundleID="com.wangyong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
 		DEVELOPMENT_TEAM="64KDUQCYEB"
 		CODE_SIGN_IDENTITY="Apple Development: Yong Wang (LFBT5QQQ6J)"
 		Configuration="Debug"
 		project_scheme="WYCICOTest5"
-		project_workspace="${Project_Name}.xcworkspace"
-		
+		project_workspace="${Project_Name}.xcworkspace"		
 		build_dir="${WORKSPACE}/build"
 		archive_path="${build_dir}/${project_scheme}.xcarchive"
 		export_path="${HOME}/project/build/${Project_Name}"
-		exportOptionsPlist="${build_dir}/${project_scheme}.plist"
-		
+		exportOptionsPlist="${build_dir}/${project_scheme}.plist"	
 		mkdir -p "${build_dir}" "${export_path}"
 		
 		# 记录变量
@@ -316,32 +329,11 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  <key>compileBitcode</key><true/>
 		</dict></plist>
 		PL
-		'''
 		
-		withCredentials([string(credentialsId: 'macos-login-keychain-pass', variable: 'KEYCHAIN_PASS')]) {
-		  sh '''#!/bin/bash
-		  set -euo pipefail
-		  set +u
-		  LOGIN_KC="${HOME}/Library/Keychains/login.keychain-db"
-		  KEYCHAIN_PASS="${KEYCHAIN_PASS:-}"
-		  set -u
 		
-		  : "${KEYCHAIN_PASS:?KEYCHAIN_PASS is empty — configure Jenkins credential 'macos-login-keychain-pass'}"
-		
-		  [ -f "$LOGIN_KC" ] || security create-keychain -p "${KEYCHAIN_PASS}" "$LOGIN_KC"
-		  security unlock-keychain -p "${KEYCHAIN_PASS}" "$LOGIN_KC"
-		  security default-keychain -s "$LOGIN_KC"
-		  security list-keychains -d user -s "$LOGIN_KC"
-		  security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${KEYCHAIN_PASS}" "$LOGIN_KC"
-		  '''
-		}
-		
-		// 构建 Archive
-		sh '''#!/bin/bash
-		set -euo pipefail
-		echo "[DEBUG] project_workspace=${project_workspace}"
+		# 构建 Archive
 		xcodebuild \
-		  #-workspace "$project_workspace" \
+		  -workspace "$project_workspace" \
 		  -scheme "$project_scheme" \
 		  -configuration "$Configuration" \
 		  clean archive \
