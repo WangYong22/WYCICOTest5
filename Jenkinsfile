@@ -293,7 +293,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		
 		# 记录变量
 		cat > BuildVariable <<EOF
-		project_workspace=${project_workspace}
+		#project_workspace=${project_workspace}
 		project_scheme=${project_scheme}
 		export_path=${export_path}
 		build_dir=${build_dir}
