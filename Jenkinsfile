@@ -197,11 +197,14 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
 										   keyFileVariable: 'SSH_KEY',
 										   usernameVariable: 'SSH_USER')]) {
-		  sh '''
+		  sh '''#!/bin/bash
+			set -euo pipefail
+			echo "[DEBUG] local host: $(hostname)"
+			
 			ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
-				"$SSH_USER"@17.87.2.137 "echo [REMOTE] ok from $(hostname)"
-		  '''
-		  }
+			   "$SSH_USER@17.87.2.137" 'echo "[REMOTE] ok from $(hostname)"'
+			'''
+			}
 	  }
 	}
 
