@@ -355,6 +355,7 @@ PL
 		  -configuration "$Configuration" \
 		  clean archive \
 		  -archivePath "$archive_path" \
+		  -destination 'generic/platform=iOS' \
 		  DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
 		  CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
 		  PRODUCT_BUNDLE_IDENTIFIER="$BundleID" \
