@@ -242,11 +242,11 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		// 3) 安装 profile（解析 UUID）
 		sh '''#!/bin/bash
 		set -euo pipefail
-		PROFILE="/tmp/WYCICOTest5V2.mobileprovision"
+		PROFILE="/tmp/WYCICOTest5V2.provisionprofile"
 		UUID=$(security cms -D -i "$PROFILE" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin)
 		echo "[PROFILE] UUID=$UUID"
 		mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-		cp "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+		cp "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.provisionprofile"
 		'''
 	
 		// 4) 构建（保持纯 shell；不要塞 Groovy 语句）
