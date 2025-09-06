@@ -290,7 +290,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 				
 		# 4) 构建（保持纯 shell；不要塞 Groovy 语句）
 				
-		#CPROVISIONING_PROFILE_NAME="${NAME_IN_PLIST:-WYCICOTest5V2}"
+		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
 		Project_Name="WYCICOTest5"
 		BundleID="com.wangyong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
 		DEVELOPMENT_TEAM="64KDUQCYEB"
