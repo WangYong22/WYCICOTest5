@@ -224,7 +224,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		'''
 	
 		// 2) 拉取 provisioning profile（用 Jenkins 中 ID=ssh17 的私钥）
-		withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+		withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
 										   keyFileVariable: 'SSH_KEY',
 										   usernameVariable: 'SSH_USER')]) {
 		  sh '''#!/bin/bash
