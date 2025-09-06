@@ -297,7 +297,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		CODE_SIGN_IDENTITY="Apple Development: Yong Wang (LFBT5QQQ6J)"
 		Configuration="Debug"
 		project_scheme="WYCICOTest5"	
-		project_workspace="${Project_Name}.xcworkspace"		
+		project_workspace="${Project_Name}.xcworkspace"	
+		project_proj="${Project_Name}.xcodeproj"	
 		build_dir="${WORKSPACE}/build"
 		archive_path="${build_dir}/${project_scheme}.xcarchive"
 		export_path="${HOME}/project/build/${Project_Name}"
@@ -314,6 +315,16 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		archive_path=${archive_path}
 		exportOptionsPlist=${exportOptionsPlist}
 EOF
+		
+		if [ -f "$project_workspace" ]; then
+		  echo "[BUILD] Use workspace: $project_workspace"
+		  xcodebuild -list -workspace "$project_workspace" || true
+		  SRC_OPTS=(-workspace "$project_workspace")
+		else
+		  echo "[BUILD] Use project: $project_proj"
+		  xcodebuild -list -project "$project_proj" || true
+		  SRC_OPTS=(-project "$project_proj")
+		fi
 		
 		echo "check3"
 		
@@ -334,9 +345,12 @@ EOF
 PL
 		echo "check4"
 		
+		
+		
+		
 		# 构建 Archive
 		xcodebuild \
-		  -workspace "$project_workspace" \
+		  "${SRC_OPTS[@]}" \
 		  -scheme "$project_scheme" \
 		  -configuration "$Configuration" \
 		  clean archive \
