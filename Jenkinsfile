@@ -243,26 +243,38 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		sh '''#!/bin/bash
 		set -euo pipefail
 		PROFILE="/tmp/WYCICOTest5V2.provisionprofile"
-		echo "==[CHECK] ls -l =="
-  		ls -l "$PROFILE" || { echo "ERROR: $PROFILE not found"; exit 2; }
-  		  echo "==[CHECK] head (cat preview) =="
-		  # 你点名要 cat，这里给出前几行（可能是二进制会花屏，属正常）
-		  head -n 5 "$PROFILE" || true
+		PLIST="/tmp/WYCICOTest5V2.plist"
+        SECERR="/tmp/security.err"
+        
+        echo "==[PARSE] security cms -> $PLIST =="
+		# 先尝试按 CMS 解包；失败时把错误打出来，并在是 XML 的情况下兜底
+		if /usr/bin/security cms -D -i "$PROFILE" > "$PLIST" 2>"$SECERR"; then
+		  echo "security cms OK"
+		else
+		  echo "security cms failed:"
+		  cat "$SECERR" || true
+		  if file "$PROFILE" | grep -qi 'XML'; then
+			echo "Detected XML plist; using it directly"
+			cp "$PROFILE" "$PLIST"
+		  else
+			exit 1
+		  fi
+		fi
 		
-		  echo "==[CHECK] first bytes =="
-		  # 如果是二进制 CMS 容器，用十六进制前 64 字节更直观
-		  command -v xxd >/dev/null && xxd -l 64 -g 1 "$PROFILE" || true
-		
-		UUID=$(security cms -D -i "$PROFILE" | /usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin)
+		echo "==[VERIFY] plutil -lint =="
+		/usr/bin/plutil -lint "$PLIST"
+
+		echo "==[UUID] PlistBuddy =="
+		UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PLIST")
 		echo "[PROFILE] UUID=$UUID"
-		mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-		cp "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.provisionprofile"
-		'''
-	
-		// 4) 构建（保持纯 shell；不要塞 Groovy 语句）
-		sh '''#!/bin/bash
-		set -euo pipefail
 		
+		echo "==[INSTALL]=="
+		/bin/mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+		/usr/bin/install -m 0644 "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
+		echo "Installed: $HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
+			
+		// 4) 构建（保持纯 shell；不要塞 Groovy 语句）
+				
 		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
 		Project_Name="WYCICOTest5"
 		BundleID="com.wangyong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
