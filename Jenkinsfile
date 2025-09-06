@@ -297,11 +297,17 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		CODE_SIGN_IDENTITY="Apple Development: Yong Wang (LFBT5QQQ6J)"
 		Configuration="Debug"
 		project_scheme="WYCICOTest5"
+		
+		echo "check1"
+		
 		project_workspace="${Project_Name}.xcworkspace"		
 		build_dir="${WORKSPACE}/build"
 		archive_path="${build_dir}/${project_scheme}.xcarchive"
 		export_path="${HOME}/project/build/${Project_Name}"
 		exportOptionsPlist="${build_dir}/${project_scheme}.plist"	
+		
+		echo "check2"
+		
 		mkdir -p "${build_dir}" "${export_path}"
 		
 		# 记录变量
@@ -313,6 +319,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		archive_path=${archive_path}
 		exportOptionsPlist=${exportOptionsPlist}
 		EOF
+		
+		echo "check3"
 		
 		# 生成 exportOptionsPlist（手工签名，用 Name 绑定 profile）
 		cat > "${exportOptionsPlist}" <<PL
@@ -329,7 +337,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  <key>compileBitcode</key><true/>
 		</dict></plist>
 		PL
-		
+		echo "check4"
 		
 		# 构建 Archive
 		xcodebuild \
