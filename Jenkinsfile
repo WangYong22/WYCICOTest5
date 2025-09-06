@@ -292,7 +292,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 				
 		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
 		Project_Name="WYCICOTest5"
-		BundleID="com.wangyong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
+		BundleID="com.WangYong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
 		DEVELOPMENT_TEAM="64KDUQCYEB"
 		CODE_SIGN_IDENTITY="Apple Development: Yong Wang (LFBT5QQQ6J)"
 		Configuration="Debug"
