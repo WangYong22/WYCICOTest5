@@ -191,66 +191,17 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
         }
       }
     }
-    stage('Cred debug: secret text') {
-	  steps {
-		withCredentials([string(credentialsId: 'wangyong22', variable: 'SEC')]) {
-		  sh '''#!/bin/bash
-	set -euo pipefail
-	echo "[OK] secret text length: $(echo -n "$SEC" | wc -c)"
-	'''
-		}
-	  }
-	}
-    
-    stage('Cred debug: user+pass (GitHub)') {
-	  steps {
-		withCredentials([usernamePassword(credentialsId: 'c68da2ec-5604-41af-84b8-3bf7d96a2361',
-										  usernameVariable: 'U', passwordVariable: 'P')]) {
-		  sh '''#!/bin/bash
-	set -euo pipefail
-	echo "[OK] username: $U"
-	test -n "$P" && echo "[OK] password present"
-	'''
-		}
-	  }
-	}
-	
-	stage('Cred debug: secret file (kubeconfig)') {
-	  steps {
-		withCredentials([file(credentialsId: 'k8s-jenkins', variable: 'KCFG')]) {
-		  sh '''#!/bin/bash
-	set -euo pipefail
-	echo "[OK] file exists at: $KCFG"
-	head -n 2 "$KCFG" || true
-	'''
-		}
-	  }
-	}
-    
-    stage('Cred debug: user+pass (jenkins-api)') {
-	  steps {
-		withCredentials([usernamePassword(credentialsId: 'jenkins-api',
-										  usernameVariable: 'JU', passwordVariable: 'JP')]) {
-		  sh '''#!/bin/bash
-	set -euo pipefail
-	echo "[OK] Jenkins user: $JU"
-	test -n "$JP" && echo "[OK] token present"
-	'''
-		}
-	  }
-	}
-    
+  
 	stage('Cred debug: ssh private key (ssh17)') {
 	  steps {
-		withCredentials([sshUserPrivateKey(credentialsId: 'ssh17',
+		withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
 										   keyFileVariable: 'SSH_KEY',
 										   usernameVariable: 'SSH_USER')]) {
-		  sh '''#!/bin/bash
-	set -euo pipefail
-	echo "[OK] SSH_USER=$SSH_USER"
-	ls -l "$SSH_KEY" || true
-	'''
-		}
+		  sh '''
+			ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
+				"$SSH_USER"@17.87.2.137 "echo [REMOTE] ok from $(hostname)"
+		  '''
+		  }
 	  }
 	}
 
