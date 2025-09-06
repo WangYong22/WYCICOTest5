@@ -273,7 +273,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		/usr/bin/install -m 0644 "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
 		echo "Installed: $HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
 			
-		// 4) 构建（保持纯 shell；不要塞 Groovy 语句）
+		# 4) 构建（保持纯 shell；不要塞 Groovy 语句）
 				
 		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
 		Project_Name="WYCICOTest5"
