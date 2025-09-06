@@ -283,7 +283,6 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		Configuration="Debug"
 		project_scheme="WYCICOTest5"
 		project_workspace="${Project_Name}.xcworkspace"
-		echo "[DEBUG] project_workspace=${project_workspace}"
 		
 		build_dir="${WORKSPACE}/build"
 		archive_path="${build_dir}/${project_scheme}.xcarchive"
@@ -341,7 +340,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		sh '''#!/bin/bash
 		set -euo pipefail
 		xcodebuild \
-		#  -workspace "$project_workspace" \
+		  -workspace "$project_workspace" \
 		  -scheme "$project_scheme" \
 		  -configuration "$Configuration" \
 		  clean archive \
