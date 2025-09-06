@@ -339,6 +339,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		// 构建 Archive
 		sh '''#!/bin/bash
 		set -euo pipefail
+		echo "[DEBUG] project_workspace=${project_workspace}"
 		xcodebuild \
 		  -workspace "$project_workspace" \
 		  -scheme "$project_scheme" \
