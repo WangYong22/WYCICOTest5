@@ -40,7 +40,7 @@ spec:
       emptyDir: {}
   containers:
   - name: compute
-    image: "17.87.2.137:5001/macos-vm:iosbuild1"
+    image: "17.87.2.137:5001/macos-vm:15_6"
     imagePullPolicy: IfNotPresent
     resources:
       requests:

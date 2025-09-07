@@ -245,8 +245,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  sh '''#!/bin/bash
 			set -euo pipefail
 			REMOTE="17.87.2.137"
-			REMOTE_FILE="/Users/mdsadmin/WYCICOTest5V2.provisionprofile"     # <— 确认远端真实文件名
-			LOCAL="/tmp/WYCICOTest5V2.provisionprofile"
+			REMOTE_FILE="/Users/mdsadmin/WangYongiOS1.provisionprofile"     # <— 确认远端真实文件名
+			LOCAL="/tmp/WangYongiOS1.provisionprofile"
 			
 			echo "[SCP] $REMOTE:$REMOTE_FILE -> $LOCAL"
 			scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
@@ -257,8 +257,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		// 3) 安装 profile（解析 UUID）
 		sh '''#!/bin/bash
 			set -euo pipefail
-			PROFILE="/tmp/WYCICOTest5V2.provisionprofile"
-			PLIST="/tmp/WYCICOTest5V2.plist"
+			PROFILE="/tmp/WangYongiOS1.provisionprofile"
+			PLIST="/tmp/WangYongiOS1.plist"
 			SECERR="/tmp/security.err"
 			
 			echo "==[PARSE] security cms -> $PLIST =="
@@ -290,9 +290,9 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 				
 		# 4) 构建（保持纯 shell；不要塞 Groovy 语句）
 				
-		CPROVISIONING_PROFILE_NAME="WYCICOTest5V2"
-		Project_Name="WYCICOTest5"
-		BundleID="com.WangYong2.WYCICOTest5"                         # <— 与后台保持一致（小写 w）
+		CPROVISIONING_PROFILE_NAME="WangYongiOS1"
+		Project_Name="wangyongiosCICDtest"
+		BundleID="com.WangYong2.WYCICDiOSTest"                         # <— 与后台保持一致（小写 w）
 		DEVELOPMENT_TEAM="64KDUQCYEB"
 		CODE_SIGN_IDENTITY="Apple Development: Yong Wang (LFBT5QQQ6J)"
 		Configuration="Debug"
@@ -355,6 +355,7 @@ PL
 		  -configuration "$Configuration" \
 		  clean archive \
 		  -archivePath "$archive_path" \
+		  
 		  -destination 'generic/platform=iOS' \
 		  DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
 		  CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
@@ -364,7 +365,7 @@ PL
 		  -allowProvisioningDeviceRegistration \
 		  -UseModernBuildSystem=NO \
 		  -quiet
-		
+		echo "check4"
 		# 导出 IPA
 		xcodebuild -exportArchive \
 		  -archivePath "$archive_path" \
