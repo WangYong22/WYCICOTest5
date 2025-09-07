@@ -378,7 +378,7 @@ PL
 		'''
 		  }
 		
-		  echo "  5) 在这个 stage 的 post 里收集产物（仍在 macOS 节点上）"	
+		 //  5) 在这个 stage 的 post 里收集产物（仍在 macOS 节点上）"	
 		  post {
 			always {
 			  script {
@@ -413,7 +413,7 @@ PL
 		  echo "[UPLOAD] no ipa found under ${export_path}"
 		fi
 		
-		# 2) 传 .xcarchive（用 rsync 更快且可断点续传）
+		echo " .xcarchive（用 rsync 更快且可断点续传） "
 		if [ -n "$archive_path" ] && [ -d "$archive_path" ]; then
 		  echo "[UPLOAD] xcarchive -> ${REMOTE}:${REMOTE_DIR}/${project_scheme}.xcarchive/"
 		  rsync -a \
