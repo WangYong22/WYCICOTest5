@@ -343,12 +343,12 @@ EOF
 		  <key>compileBitcode</key><true/>
 		</dict></plist>
 PL
-		echo "check4"
 		
 		
 		
 		
-		# 构建 Archive
+		
+		echo " 构建 Archive "
 		xcodebuild \
 		  "${SRC_OPTS[@]}" \
 		  -scheme "$project_scheme" \
@@ -365,8 +365,8 @@ PL
 		  -allowProvisioningDeviceRegistration \
 		  -UseModernBuildSystem=NO \
 		  -quiet
-		echo "check4"
-		# 导出 IPA
+		  
+		echo " 导出 IPA"		
 		xcodebuild -exportArchive \
 		  -archivePath "$archive_path" \
 		  -exportOptionsPlist "$exportOptionsPlist" \
@@ -378,7 +378,7 @@ PL
 		'''
 		  }
 		
-		  // 5) 在这个 stage 的 post 里收集产物（仍在 macOS 节点上）
+		  echo "  5) 在这个 stage 的 post 里收集产物（仍在 macOS 节点上）"	
 		  post {
 			always {
 			  script {
@@ -393,7 +393,7 @@ PL
 		RUN_DIR="${JOB_BASE_NAME}#${BUILD_NUMBER}"
 		REMOTE_DIR="${REMOTE_BASE}/${RUN_DIR}"
 		
-		# 读取构建阶段写下的变量；做兜底，避免 set -u 触发
+		echo "读取构建阶段写下的变量；做兜底，避免 set -u 触发"		
 		[ -f BuildVariable ] && source BuildVariable || true
 		export_path=${export_path:-}
 		archive_path=${archive_path:-}
@@ -403,7 +403,7 @@ PL
 		ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
 			"$SSH_USER@$REMOTE" "mkdir -p \"${REMOTE_DIR}\""
 		
-		# 1) 传 ipa
+		echo "传 ipa"
 		if [ -n "$export_path" ] && ls "$export_path"/*.ipa >/dev/null 2>&1; then
 		  echo "[UPLOAD] ipa -> ${REMOTE}:${REMOTE_DIR}"
 		  scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
@@ -424,7 +424,7 @@ PL
 		  echo "[UPLOAD] no xcarchive dir at ${archive_path}"
 		fi
 		
-		# 3) 附带上传变量文件，便于远端排查
+		echo "附带上传变量文件，便于远端排查"
 		[ -f BuildVariable ] && scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
 			BuildVariable "$SSH_USER@$REMOTE:${REMOTE_DIR}/" || true
 		
