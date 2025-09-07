@@ -245,8 +245,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		  sh '''#!/bin/bash
 			set -euo pipefail
 			REMOTE="17.87.2.137"
-			REMOTE_FILE="/Users/mdsadmin/WangYongiOS1.provisionprofile"     # <— 确认远端真实文件名
-			LOCAL="/tmp/WangYongiOS1.provisionprofile"
+			REMOTE_FILE="/Users/mdsadmin/WangYongiOS1.mobileprovision"     # <— 确认远端真实文件名
+			LOCAL="/tmp/WangYongiOS1.mobileprovision"
 			
 			echo "[SCP] $REMOTE:$REMOTE_FILE -> $LOCAL"
 			scp -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
@@ -257,7 +257,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 		// 3) 安装 profile（解析 UUID）
 		sh '''#!/bin/bash
 			set -euo pipefail
-			PROFILE="/tmp/WangYongiOS1.provisionprofile"
+			PROFILE="/tmp/WangYongiOS1.mobileprovision"
 			PLIST="/tmp/WangYongiOS1.plist"
 			SECERR="/tmp/security.err"
 			
@@ -285,8 +285,8 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
 			
 			echo "==[INSTALL]=="
 			/bin/mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-			/usr/bin/install -m 0644 "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
-			echo "Installed: $HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.provisionprofile"
+			/usr/bin/install -m 0644 "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+			echo "Installed: $HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
 				
 		# 4) 构建（保持纯 shell；不要塞 Groovy 语句）
 				
