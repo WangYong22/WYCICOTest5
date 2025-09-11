@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent none
 
   environment {
     KCFG_ID     = 'k8s-jenkins'                 // kubeconfig 凭据ID
@@ -13,6 +13,7 @@ pipeline {
   stages {
 
     stage('Create Jenkins Node') {
+      agent { label 'macmain' }   // <- 这里是装了 kubectl 的 Mac节点
       steps {
         withCredentials([usernameColonPassword(credentialsId: 'jenkins-api', variable: 'JAUTH')]) {
           script {
@@ -137,8 +138,9 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
     }
 
     stage('Launch VM Pod') {
+      agent { label 'macmain' }   // <- 这里是装了 kubectl 的 Mac节点
       steps {
-        sh 'cp /var/jenkins_home/pod-templates/macos-pod.yaml .'
+        sh 'cp /Users/mdsadmin/jenkins_home/pod-templates/macos-pod.yaml .'
         withKubeConfig([credentialsId: env.KCFG_ID]) {
           sh """
             sed -e "s/__BUILD_ID__/${BUILD_NODE}/g" \
@@ -193,6 +195,7 @@ kubectl -n ci create secret generic jenkins-macos-${NODE} \\
     }
   
 	stage('Cred debug: ssh private key (137ssh)') {
+	  agent { label 'macmain' }   // <- 这里是装了 kubectl 的 Mac节点
 	  steps {
 		withCredentials([sshUserPrivateKey(credentialsId: '137ssh',
 										   keyFileVariable: 'SSH_KEY',
