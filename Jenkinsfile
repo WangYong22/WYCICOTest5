@@ -442,11 +442,24 @@ PL
   
   
   post {
-    always {   
-    	 withKubeConfig([credentialsId: env.KCFG_ID]) {
-    	   sh "kubectl -n ci delete pod macos-build-${BUILD_NODE} --ignore-not-found"
-       	   sh "kubectl -n ci delete secret jenkins-macos-${BUILD_NODE} --ignore-not-found"
-      }
-    }
+	always {
+	  script {
+		try {
+		  timeout(time: 2, unit: 'MINUTES') {
+			node('macmain') {                         // ← 一定要进到有 kubectl 的节点
+			  withKubeConfig([credentialsId: env.KCFG_ID]) {
+				sh """
+				  set -xe
+				  kubectl -n ci delete pod macos-build-${env.BUILD_NODE} --ignore-not-found
+				  kubectl -n ci delete secret jenkins-macos-${env.BUILD_NODE} --ignore-not-found
+				"""
+			  }
+			}
+		  }
+		} catch (e) {
+		  echo "cleanup failed: ${e}"
+		}
+	  }
+	}
   }
 }
