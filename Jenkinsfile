@@ -454,41 +454,40 @@ PL
 				  kubectl -n ci delete secret jenkins-macos-${env.BUILD_NODE} --ignore-not-found
 				"""
 			  }
-			}
+		  
+			  // 再删 Jenkins 节点
+			  withCredentials([usernameColonPassword(credentialsId: 'jenkins-api', variable: 'JAUTH')]) {
+			    sh """#!/bin/bash
+			  	  set -euo pipefail
+			  	  JURL='${env.JENKINS_URL}'
+			  	  NODE='${env.BUILD_NODE}'
+				
+				  # 取 crumb
+				  CRUMB=\$(curl -fsS -u "\$JAUTH" "\$JURL/crumbIssuer/api/json" | sed -n 's/.*"crumb"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')
+				
+				  # 用 /scriptText 做“断开 + 删除”（幂等）
+				  cat > .cleanup.groovy <<'G'
+				  import jenkins.model.Jenkins
+				  def name = System.getenv('NODE_NAME') ?: ''
+				  if (!name) { println "NO_NODE_NAME"; return }
+				  def j = Jenkins.get()
+				  def n = j.getNode(name)
+				  if (n != null) {
+				    def c = n.toComputer()
+				    try { c?.doDoDisconnect("build finished; cleanup") } catch (ignored) {}
+				    j.removeNode(n)
+				    println "REMOVED " + name
+				  } else {
+				    println "NO_NODE " + name
+				  }
+G
+				
+				  NODE_NAME="\$NODE" curl -fsS -u "\$JAUTH" -H "Jenkins-Crumb: \$CRUMB" \\
+				    --data-urlencode script@.cleanup.groovy "\$JURL/scriptText" | sed -n '1,80p'
+				  """
+			  }
+		    }
 		  }
-		  
-		  // 再删 Jenkins 节点
-        withCredentials([usernameColonPassword(credentialsId: 'jenkins-api', variable: 'JAUTH')]) {
-          sh """#!/bin/bash
-			set -euo pipefail
-			JURL='${env.JENKINS_URL}'
-			NODE='${env.BUILD_NODE}'
-			
-			# 取 crumb
-			CRUMB=\$(curl -fsS -u "\$JAUTH" "\$JURL/crumbIssuer/api/json" | sed -n 's/.*"crumb"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p')
-			
-			# 用 /scriptText 做“断开 + 删除”（幂等）
-			cat > .cleanup.groovy <<'G'
-			import jenkins.model.Jenkins
-			def name = System.getenv('NODE_NAME') ?: ''
-			if (!name) { println "NO_NODE_NAME"; return }
-			def j = Jenkins.get()
-			def n = j.getNode(name)
-			if (n != null) {
-			  def c = n.toComputer()
-			  try { c?.doDoDisconnect("build finished; cleanup") } catch (ignored) {}
-			  j.removeNode(n)
-			  println "REMOVED " + name
-			} else {
-			  println "NO_NODE " + name
-			}
-			G
-			
-			NODE_NAME="\$NODE" curl -fsS -u "\$JAUTH" -H "Jenkins-Crumb: \$CRUMB" \\
-			  --data-urlencode script@.cleanup.groovy "\$JURL/scriptText" | sed -n '1,80p'
-			"""
-		}
-		  
 		} catch (e) {
 		  echo "cleanup failed: ${e}"
 		}
