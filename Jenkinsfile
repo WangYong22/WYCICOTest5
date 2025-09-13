@@ -482,21 +482,6 @@ G
 				curl -fsS -u "\$JAUTH" -H "Jenkins-Crumb: \$CRUMB" \
 				  --data-urlencode script@.cleanup.groovy \
 				  "\$JURL/scriptText" | sed -n '1,80p'
-				  
-				  # 2) 批量删除所有 macos 开头的节点
-					cat > .cleanup_all.groovy <<'G2'
-					import jenkins.model.Jenkins
-					def j = Jenkins.get()
-					j.nodes.findAll { it.name.startsWith("macos") }.each { n ->
-					  try { n.toComputer()?.doDoDisconnect("bulk cleanup") } catch (ignored) {}
-					  j.removeNode(n)
-					  println "REMOVED " + n.name
-					}
-G2
-					
-					curl -fsS -u "\$JAUTH" -H "Jenkins-Crumb: \$CRUMB" \
-					  --data-urlencode script@.cleanup_all.groovy \
-					  "\$JURL/scriptText" | sed -n '1,200p'
 				""" 
 			  }
 		    }
